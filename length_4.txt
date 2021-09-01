@@ -1,0 +1,303 @@
+Type4  = {}
+Up3 = {}
+
+for n in range(6):
+    for u in Lset[n]:
+        Up3[u] = set()
+        for v in Lset[n+3]:
+            if u.bruhat_le(v):
+                Up3[u].add(v)
+
+IStan = []
+SStan = []
+Stan4 = []
+Index4 = {}
+Iset = {}
+IsetAll = {}
+IntSet = {}
+M = {}
+Int = set()
+Im = {}
+Map = {}
+AllInt = set()
+for n in range(6):
+    for u in Lset[n]:
+        for v in Lset[n+4]:
+            if u.bruhat_le(v):
+                AllInt.add((u,v))
+for n in range(6):
+    for u in Lset[n]:
+        u
+        for v in Lset[n+4]:
+            if u.bruhat_le(v):
+                c = 1
+                for w in Up[v]:
+                    for f in Aut[(u,w)]:
+                       if (u,f(v)) in Int:
+                            Im[(u,v)] = (u,f(v))
+                            Map[(u,v)] = [f,0,0]
+                            c = 0
+                if c == 1:
+                    Int.add((u,v))
+
+Int_1 = set()
+for uv in Int:
+    u = uv[0]
+    v = uv[1]
+    c = 1
+    for w in Down[u]:
+        for f in Aut[(w,v)]:
+            if (f(u),v) in Int_1:
+                Im[(u,v)] = (f(u),v)
+                Map[(u,v)] = [f,0,0]
+                c = 0
+    if c == 1:
+        Int_1.add((u,v))
+
+
+
+SetOfInd = set()
+for uv in AllInt:
+    u = uv[0]
+    v = uv[1]
+    M1 = Up3[u].intersection(Down[v])
+    M[(u,v)] = list(M1) 
+    a = len(list(M1))
+    index = [0]*a
+    def typesort(b):
+        return Type3[(u,b)]
+    M[(u,v)].sort(key = typesort)
+    for p in range(a):
+        index[p] = Type3[(u,M[(u,v)][p])]
+    indext = tuple(index)
+    if indext not in SetOfInd:
+        IsetAll[indext] = []
+        SetOfInd.add(indext)
+    IsetAll[indext].append((u,v))
+for X in SetOfInd:
+    Iset[X] = set(IsetAll[X]).intersection(Int_1)
+
+
+
+for X in SetOfInd:
+    X
+    a = len(X)
+    Interv = [0]*(a+1)
+    for i in range(a+1):
+        Interv[i] = []    
+    for uv in Iset[X]:
+        Interv[0].append(uv)
+    A = [0]*a
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan3[X[i]][0],Stan3[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    F = {}
+    for uv in Iset[X]:
+        F[uv] = {} 
+        for uv_1 in Iset[X]:
+            F[uv][uv_1] = [0]*a
+            for p in range(a):
+                F[uv][uv_1][p] = set()  
+    for j in range(a):
+        j
+        SStan = []
+        for uv in Interv[j]:
+            len(Interv[j])
+            u = uv[0]
+            v = uv[1]
+            P = [0]*a
+            P_inv = [0]*a
+            for i in range(a):
+                P[i] = Phi3[(u,M[(u,v)][i])]
+                P_inv[i] = Phi3_inv[(u,M[(u,v)][i])]
+            Product = cartesian_product([range(len(A[i])) for i in range(j+1)])
+            indic = 0
+            for t in range(len(Interv[j+1])):
+                if indic == 1:
+                    break
+                R = [0]*a
+                R_inv = [0]*a
+                for i in range(a):
+                    R[i] = Phi3[(Interv[j+1][t][0],SStan[t][i])]
+                    R_inv[i] = Phi3_inv[(Interv[j+1][t][0],SStan[t][i])] 
+
+
+                for psi in Product:
+                    psil = list(psi)
+                    check = 1
+                    ind = 1
+                    for z in range(j+1,a):
+                        psil.append(0)
+                    for x in range(a):
+                        if tuple(psil[0:x+1]) in F[uv][Interv[j+1][t]][x]:
+                            ind = 0
+                            check = 0
+                            break
+                    if check == 1:
+                        ind = 1
+                        for i in range(a):
+                            if ind == 1:
+                               for k in range(i):
+                                   for w in BI[(u,M[(u,v)][i])].intersection(BI[(u,M[(u,v)][k])]):
+                                       if R_inv[k][A[k][psil[k]](P[k][w])] != R_inv[i][A[i][psil[i]](P[i][w])]:
+                                           F[uv][Interv[j+1][t]][i].add(tuple(psil[0:i+1]))
+                                           ind = 0
+                                           break
+                    if ind == 1:
+                        indic = 1
+                        Map[(u,v)] = [psil]
+                        Im[(u,v)] = Interv[j+1][t]
+                        break
+            if indic == 0:
+                Interv[j+1].append((u,v))
+                SStan.append(M[(u,v)])
+    IntSet[X] = Interv[a]
+
+
+Stan = {}
+for X in SetOfInd:
+    Stan[X] = []
+    a = len(X)
+    A = [0]*a
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan3[X[i]][0],Stan3[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    Product = cartesian_product([range(len(A[i])) for i in range(a)])
+    perm = []
+    for c in range(a-1):
+        if X[c] == X[c+1]:
+            perm.append((c,c+1))
+    perm_gr = PermutationGroup(perm)
+    perm_gr
+    SStan = []
+    FF = {}
+    for uv in IntSet[X]:
+        FF[uv] = {}
+        for uv_1 in IntSet[X]:
+            FF[uv][uv_1] = {}
+            for sigma in perm_gr:
+                FF[uv][uv_1][sigma] = [0]*a
+                for i in range(a):
+                    FF[uv][uv_1][sigma][i] = set()
+    for uv in IntSet[X]:
+        u = uv[0]
+        v = uv[1]
+        P = [0]*a
+        P_inv = [0]*a
+        for i in range(a):
+            P[i] = Phi3[(u,M[(u,v)][i])]
+            P_inv[i] = Phi3_inv[(u,M[(u,v)][i])]
+        indic = 0
+        for t in range(len(Stan[X])):
+            uv_1 = Stan[X][t]
+            if indic == 1:
+                break
+            R = [0]*a
+            R_inv = [0]*a
+            for i in range(a):
+                R[i] = Phi3[(Stan[X][t][0],SStan[t][i])]
+                R_inv[i] = Phi3_inv[(Stan[X][t][0],SStan[t][i])] 
+            for sigma in perm_gr:
+                if indic == 1:
+                    break
+                for psi in Product:
+                    psil = list(psi)
+                    check = 1
+                    ind = 1
+                    for x in range(a):
+                        if tuple(psil[0:x+1]) in FF[uv][uv_1][sigma][x]:
+                            check = 0
+                            ind = 0
+                            break
+                    if check == 1:
+                        ind = 1
+                        for i in range(a):
+                            if ind == 1:
+                               for k in range(i):
+                                   for w in BI[(u,M[(u,v)][i])].intersection(BI[(u,M[(u,v)][k])]):
+                                       if R_inv[sigma(k)][A[k][psil[k]](P[k][w])] != R_inv[sigma(i)][A[i][psil[i]](P[i][w])]:
+                                           FF[uv][uv_1][sigma][i].add(tuple(psil[0:i+1]))
+                                           ind = 0
+                                           break
+                    if ind == 1:
+                        indic = 1
+                        Map[(u,v)] = [psi,sigma]
+                        Im[(u,v)] = Stan[X][t]
+                        break
+        if indic == 0:
+            Stan4.append((u,v))
+            Stan[X].append((u,v))
+            SStan.append(M[(u,v)])
+
+
+Phi4 = {}
+Phi4_inv = {}
+Phi4_1 = {}
+for X in SetOfInd:
+    a = len(X)
+    X
+    A = [0]*a
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan3[X[i]][0],Stan3[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    for uv in Iset[X]:
+        Phi4_inv[uv] = {}
+        Phi4[uv] = {}
+        Phi4_1[uv] = {}
+        Q = BI[(uv[0],uv[1])]
+        for w in Q:
+            Phi4[uv][w] = w
+            Phi4_1[uv][w] = w
+        S = [0]*a
+        for i in range(a):
+            S[i] = BI[(uv[0],M[uv][i])]
+        uv_1 = uv
+        while uv_1 not in Stan[X]:
+            if len(Map[uv_1]) == 1:
+                uv_2 = Im[uv_1]
+                for i in range(a):
+                    for w in S[i]:
+                        Phi4_1[uv][w] = Phi3_inv[(uv_2[0],M[uv_2][i])][A[i][Map[uv_1][0][i]](Phi3[(uv_1[0],M[uv_1][i])][Phi4[uv][w]])]
+            if len(Map[uv_1]) == 2:        
+                uv_2 = Im[uv_1]
+                for i in range(a):
+                    for w in S[i]:
+                        Phi4_1[uv][w] = Phi3_inv[(uv_2[0],M[uv_2][Map[uv_1][1](i)])][A[i][Map[uv_1][0][i]](Phi3[(uv_1[0],M[uv_1][i])][Phi4[uv][w]])]
+            uv_1 = Im[uv_1] 
+            for w in Q:
+                Phi4[uv][w] = Phi4_1[uv][w]
+            Phi4[uv][uv[1]] = uv_2[1]
+        Type4[uv] = Stan4.index(uv_1)
+        for w in Q:
+            Phi4_inv[uv][Phi4[uv][w]] = w
+
+for X in SetOfInd:
+    a = len(X)
+    X
+    for uv in IsetAll[X]:
+        if uv not in Int_1:
+            Phi4_inv[uv] = {}
+            Phi4[uv] = {}
+            Phi4_1[uv] = {}
+            Q = BI[uv]
+            for w in Q:
+                Phi4[uv][w] = w
+                Phi4_1[uv][w] = w
+            uv_1 = uv
+            while uv_1 not in Int_1:
+                for w in BI[uv]:
+                    Phi4_1[uv][w] = Map[uv_1][0](Phi4[uv][w])
+                for w in BI[uv]:
+                    Phi4[uv][w] = Phi4_1[uv][w]
+                uv_1 = Im[uv_1]
+            u = uv_1[0]
+            v = uv_1[1]
+            u1 = Phi4[uv_1][u]
+            v1 = Phi4[uv_1][v]
+            for w in Q:
+                Phi4_1[uv][w] = Phi4[uv_1][Phi4[uv][w]] 
+            for w in Q:
+                Phi4[uv][w] = Phi4_1[uv][w]    
+            Type4[uv] = Stan4.index((u1,v1))
+            for w in Q:
+                Phi4_inv[uv][Phi4[uv][w]] = w       
