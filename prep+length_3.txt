@@ -1,0 +1,388 @@
+W = WeylGroup(['A',5], prefix="s")
+s = W.simple_reflections()
+T2 = [(0,1)]
+LW = list(W)
+G = W.bruhat_graph()
+G
+Phi2 = {}
+Phi2_inv = {}
+Type2 = {}
+Type3 = {}
+Stan2 = [(s[0]*s[0],s[1]*s[2])]
+
+Up2 = {}
+Down = {}
+BI = {}
+Lset = [0]*12
+for n in range(12):
+    Lset[n] = list(W.elements_of_length(n))
+
+for n in range(12):
+    for v in Lset[n]:
+        Down[v] = set(v.bruhat_lower_covers())
+
+Up = {}
+for n in range(11):
+    for v in Lset[n]:
+        Up[v] = set(v.bruhat_upper_covers())
+
+# BI[(u,v)] is the set of elements in the interval [u,v]
+# we construct those sets throught induction on the interval length
+for n in range(6):
+    for u in Lset[n]:
+        for v in Lset[n]:
+            BI[(u,v)] = set()
+        BI[(u,u)] = {u}
+for n in range(6):
+    n
+    for i in range(1,7):
+        i
+        for u in Lset[n]:
+            for v in Lset[n+i]:
+                BI[(u,v)] = set()
+                for w in Down[v]:
+                    BI[(u,v)] = BI[(u,v)].union(BI[(u,w)])
+                if BI[(u,v)] != set():
+                    BI[(u,v)].add(v)
+
+#if u is of length n, then Up2[u] is the set of elements of length n+2 greater then u
+
+for n in range(6):
+    for u in Lset[n]:
+        Up2[u] = set()
+        for v in Lset[n+2]:
+            if u.bruhat_le(v):
+                Up2[u].add(v)
+
+#Aut[(u,v)] is the automorphism group of the interval [u,v]
+
+Aut = {}
+for n in range(6):
+    n
+    for i in range(1,7):
+        i
+        for u in Lset[n]:
+            for v in Lset[n+i]:
+                G_uv = G.subgraph(BI[(u,v)])
+                Aut[(u,v)] = G_uv.automorphism_group()
+
+#Phi2[(u,v)] is a fixed map from the interval [u,v] of length 2 to the interval [e, s_1s_2], in the paper it appears as \varphi_{[u,v]}
+#Typek[(u,v)] is the index of interval isomorphic to [u,v] in I_k from the paper (here k = 2)
+
+for n in range(6):
+    for u in W.elements_of_length(n):
+        for v in W.elements_of_length(n+2):
+            if u.bruhat_le(v):
+                B = BI[(u,v)].intersection(Down[v])
+                Bl = list(B)
+                Phi2[(u,v)]= {u:s[0]*s[0],Bl[0]:s[1], Bl[1]:s[2], v:s[1]*s[2]}
+                Phi2_inv[(u,v)] = {s[0]*s[0]:u, s[1]*s[2]:v, s[1]:Bl[0], s[2]:Bl[1]}
+                Type2[(u,v)] = 0
+
+
+IStan = []
+SStan = []
+Stan3 = []
+Index3 = {}
+Iset = {}
+IsetAll = {}
+IntSet = {}
+M = {}
+Int = set()
+Im = {}
+Map = {}
+AllInt = set()
+
+#AllInt is the set of all intervals of length 3
+
+for n in range(6):
+    for u in Lset[n]:
+        for v in Lset[n+3]:
+            if u.bruhat_le(v):
+                AllInt.add((u,v))
+
+
+#Int is the set of representative length 3 intervals with the equivalence being automorphisms of length 4 intervals with the same start. 
+#This is not part of the process described in the paper, just a tool to shorten the list of intervals
+
+for n in range(6):
+    for u in Lset[n]:
+        for v in Lset[n+3]:
+            if u.bruhat_le(v):
+                c = 1
+                for w in Up[v]:
+                    for f in Aut[(u,w)]:
+                        if (u,f(v)) in Int:
+                            Im[(u,v)] = (u,f(v))
+                            Map[(u,v)] = [f,0,0]
+                            c = 0
+                if c == 1:
+                    Int.add((u,v))
+
+#Int_1 is the set of representative length 3 intervals from Int with the equivalence being automorphisms of length 4 intervals with the same end. 
+#This is not part of the process described in the paper, just a tool to shorten the list of intervals
+
+Int_1 = set()
+for uv in Int:
+    u = uv[0]
+    v = uv[1]
+    c = 1
+    for w in Down[u]:
+        for f in Aut[(w,v)]:
+            if (f(u),v) in Int_1:
+                Im[(u,v)] = (f(u),v)
+                Map[(u,v)] = [f,0,0]
+                c = 0
+    if c == 1:
+        Int_1.add((u,v))
+
+
+#SetOfInd (where Ind is short for Indexes) is the set of all values of the T part of TPA on the Weyl group W
+#Iset[X] is the set of intervals from Int_1 with T = X.
+
+SetOfInd = set()
+for uv in AllInt:
+    u = uv[0]
+    v = uv[1]
+    M1 = Up2[u].intersection(Down[v])
+    M[(u,v)] = list(M1) 
+    a = len(list(M1))
+    index = [0]*a
+    def typesort(b):
+        return Type2[(u,b)]
+    M[(u,v)].sort(key = typesort)
+    for p in range(a):
+        index[p] = Type2[(u,M[(u,v)][p])]
+    indext = tuple(index)
+    if indext not in SetOfInd:
+        IsetAll[indext] = []
+        SetOfInd.add(indext)
+    IsetAll[indext].append((u,v))
+for X in SetOfInd:
+    Iset[X] = set(IsetAll[X]).intersection(Int_1)
+
+
+#In the following part we are selecting representatives with respect to equivalence given by the product of automorphism groups of subintervals.
+#At this point we are still differentiating between intervals that require a combination of both automorphisms and permutations of n-1-length subintervals
+# to be glued together by "standard maps" (i.e. if the 1st and 2nd n-1-subintervals of isomorphic intervals I and J are isomorphic,
+# but there are only isomorphisms taking the 1st subinterval of I to the second subinterval of J, I and J are still considered different after this stage)
+
+for X in SetOfInd:
+    a = len(X)
+    Interv = [0]*(a+1)
+    for i in range(a+1):
+        Interv[i] = []    
+    for uv in Iset[X]:
+        Interv[0].append(uv)
+    A = [0]*a
+#A[i] is the automorphism group of the standard length 2 interval number X[i]
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan2[X[i]][0],Stan2[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    F = {}
+    for uv in Iset[X]:
+        F[uv] = {} 
+        for uv_1 in Iset[X]:
+            F[uv][uv_1] = [0]*a
+            for p in range(a):
+                F[uv][uv_1][p] = set() 
+    for j in range(a):
+        SStan = []
+        for uv in Interv[j]:
+            u = uv[0]
+            v = uv[1]
+            P = [0]*a
+            P_inv = [0]*a
+            for i in range(a):
+                P[i] = Phi2[(u,M[(u,v)][i])]
+                P_inv[i] = Phi2_inv[(u,M[(u,v)][i])]
+            Product = cartesian_product([range(len(A[i])) for i in range(j+1)])
+            indic = 0
+            for t in range(len(Interv[j+1])):
+                uv_1 = Interv[j+1][t]
+                if indic == 1:
+                    break
+                R = [0]*a
+                R_inv = [0]*a
+                for i in range(a):
+                    R[i] = Phi2[(Interv[j+1][t][0],SStan[t][i])]
+                    R_inv[i] = Phi2_inv[(Interv[j+1][t][0],SStan[t][i])] 
+
+
+                for psi in Product:
+                    psil = list(psi)
+                    check = 1
+                    for z in range(j+1,a):
+                        psil.append(0)
+                    ind = 1
+                    for x in range(a):
+                        if tuple(psil[0:x+1]) in F[uv][uv_1][x]:
+                            check = 0
+                            ind = 0
+                            break
+                    if check == 1:
+                        ind = 1
+                        for i in range(a):
+                            if ind == 1:
+                               for k in range(i):
+                                   for w in BI[(u,M[(u,v)][i])].intersection(BI[(u,M[(u,v)][k])]):
+                                       if R_inv[k][A[k][psil[k]](P[k][w])] != R_inv[i][A[i][psil[i]](P[i][w])]:
+                                           F[uv][uv_1][i].add(tuple(psil[0:i+1]))
+                                           ind = 0
+                                           break
+                    if ind == 1:
+                        indic = 1
+                        Map[(u,v)] = [psil]
+                        Im[(u,v)] = Interv[j+1][t]
+                        break
+            if indic == 0:
+                Interv[j+1].append((u,v))
+                SStan.append(M[(u,v)])
+    IntSet[X] = Interv[a]
+
+#In the following part finally we identify the remaining intervals which can be equated through both permutations and automorphisms of n-1-subintervals
+#The result is the array Stan, where Stan[X] is the set of all nonisomorphic intervals of length 3 in W with index X 
+# Stan3 is the set of all nonisomorphic intervals of length 3 in W
+
+Stan = {}
+for X in SetOfInd:
+    Stan[X] = []
+    a = len(X)
+    A = [0]*a
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan2[X[i]][0],Stan2[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    Product = cartesian_product([range(len(A[i])) for i in range(a)])
+    perm = []
+    for c in range(a-1):
+        if X[c] == X[c+1]:
+            perm.append((c,c+1))
+    perm_gr = PermutationGroup(perm)
+    perm_gr
+    SStan = []
+    for uv in IntSet[X]:
+        u = uv[0]
+        v = uv[1]
+        P = [0]*a
+        P_inv = [0]*a
+        for i in range(a):
+            P[i] = Phi2[(u,M[(u,v)][i])]
+            P_inv[i] = Phi2_inv[(u,M[(u,v)][i])]
+        indic = 0
+        for t in range(len(Stan[X])):
+            uv_1 = Stan[X][t]
+            if indic == 1:
+                break
+            R = [0]*a
+            R_inv = [0]*a
+            for i in range(a):
+                R[i] = Phi2[(Stan[X][t][0],SStan[t][i])]
+                R_inv[i] = Phi2_inv[(Stan[X][t][0],SStan[t][i])] 
+            for sigma in perm_gr:
+                FF = [0]*a
+                for i in range(a):
+                    FF[i] = set()               
+                if indic == 1:
+                    break
+                for psi in Product:
+                    psil = list(psi)
+                    check = 1
+                    for x in range(a):
+                        if tuple(psil[0:x+1]) in FF[x]:
+                            check = 0
+                            break
+                    if check == 1:
+                        ind = 1
+                        for i in range(a):
+                            if ind == 1:
+                               for k in range(i):
+                                   for w in BI[(u,M[(u,v)][i])].intersection(BI[(u,M[(u,v)][k])]):
+                                       if R_inv[sigma(k)][A[k][psil[k]](P[k][w])] != R_inv[sigma(i)][A[i][psil[i]](P[i][w])]:
+                                           FF[i].add(tuple(psil[0:i+1]))
+                                           ind = 0
+                                           break
+                    if ind == 1:
+                        indic = 1
+                        Map[(u,v)] = [psi,sigma]
+                        Im[(u,v)] = Stan[X][t]
+                        break
+        if indic == 0:
+            Stan3.append((u,v))
+            Stan[X].append((u,v))
+            SStan.append(M[(u,v)])
+
+#In the following part we make some preparations to make the construction inductive and calculate the nonisomorphic subintervals of length four
+#Phi3 and Phi3_inv are dictionaries of standard maps from each of the subintervals of length 3 to one of the standard subintervals from Stan3 
+#Type[uv] is the number of the interval from Stan3 isomorphic to interval uv
+
+Phi3 = {}
+Phi3_inv = {}
+Phi3_1 = {}
+for X in SetOfInd:
+    a = len(X)
+    A = [0]*a
+    for i in range(a):
+        G_i = G.subgraph(BI[(Stan2[X[i]][0],Stan2[X[i]][1])])
+        A[i] = G_i.automorphism_group()
+    for uv in Iset[X]:
+        Phi3_inv[uv] = {}
+        Phi3[uv] = {}
+        Phi3_1[uv] = {}
+        Q = BI[(uv[0],uv[1])]
+        for w in Q:
+            Phi3[uv][w] = w
+            Phi3_1[uv][w] = w
+        S = [0]*a
+        for i in range(a):
+            S[i] = BI[(uv[0],M[uv][i])]
+        uv_1 = uv
+        while uv_1 not in Stan[X]:
+            if len(Map[uv_1]) == 1:
+                uv_2 = Im[uv_1]
+                for i in range(a):
+                    for w in S[i]:
+                        Phi3_1[uv][w] = Phi2_inv[(uv_2[0],M[uv_2][i])][A[i][Map[uv_1][0][i]](Phi2[(uv_1[0],M[uv_1][i])][Phi3[uv][w]])]
+            if len(Map[uv_1]) == 2:        
+                uv_2 = Im[uv_1]
+                for i in range(a):
+                    for w in S[i]:
+                        Phi3_1[uv][w] = Phi2_inv[(uv_2[0],M[uv_2][Map[uv_1][1](i)])][A[i][Map[uv_1][0][i]](Phi2[(uv_1[0],M[uv_1][i])][Phi3[uv][w]])]
+            uv_1 = Im[uv_1] 
+            for w in Q:
+                Phi3[uv][w] = Phi3_1[uv][w]
+            Phi3[uv][uv[1]] = uv_2[1]
+        Type3[uv] = Stan3.index(uv_1)
+        for w in Q:
+            Phi3_inv[uv][Phi3[uv][w]] = w
+
+for X in SetOfInd:
+    a = len(X)
+    X
+    for uv in IsetAll[X]:
+        if uv not in Int_1:
+            Phi3_inv[uv] = {}
+            Phi3[uv] = {}
+            Phi3_1[uv] = {}
+            Q = BI[uv]
+            for w in Q:
+                Phi3[uv][w] = w
+                Phi3_1[uv][w] = w
+            uv_1 = uv
+            while uv_1 not in Int_1:
+                for w in BI[uv]:
+                    Phi3_1[uv][w] = Map[uv_1][0](Phi3[uv][w])
+                for w in BI[uv]:
+                    Phi3[uv][w] = Phi3_1[uv][w]
+                uv_1 = Im[uv_1]
+            u = uv_1[0]
+            v = uv_1[1]
+            u1 = Phi3[uv_1][u]
+            v1 = Phi3[uv_1][v]
+            for w in Q:
+                Phi3_1[uv][w] = Phi3[uv_1][Phi3[uv][w]] 
+            for w in Q:
+                Phi3[uv][w] = Phi3_1[uv][w]    
+            Type3[uv] = Stan3.index((u1,v1))
+            for w in BI[uv]:
+                Phi3_inv[uv][Phi3[uv][w]] = w       
+
